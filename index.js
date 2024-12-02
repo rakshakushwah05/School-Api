@@ -1,0 +1,129 @@
+const express = require("express");
+const bodyParser = require("body-parser");
+const mysql = require("mysql2");
+
+const app = express();
+const port = 3000;
+
+// Middleware to parse JSON data
+app.use(bodyParser.json());
+
+// Create MySQL connection
+
+// const db = mysql.createConnection({
+//   host: "localhost",
+//   user: "root",
+//   password: "Raksha@123",
+//   database: "School_Management",
+// });
+require('dotenv').config();
+
+const db = mysql.createConnection({
+    host: process.env.DB_HOST,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    database: process.env.DB_NAME
+});
+
+
+// Connect to MySQL
+db.connect((err) => {
+  if (err) {
+    console.error("Database connection failed:", err.stack);
+    return;
+  }
+  console.log("Connected to MySQL database");
+});
+
+// Start server
+app.listen(port, () => {
+  console.log(`Server running on http://localhost:${port}`);
+});
+
+// Add School Endpoint
+app.post("/addSchool", (req, res) => {
+  const { name, address, latitude, longitude } = req.body;
+
+  // Input validation
+  if (!name || !address || !latitude || !longitude) {
+    return res.status(400).json({ error: "All fields are required" });
+  }
+
+  if (typeof latitude !== "number" || typeof longitude !== "number") {
+    return res
+      .status(400)
+      .json({ error: "Latitude and Longitude must be numbers" });
+  }
+
+  // SQL query to insert data
+  const sql =
+    "INSERT INTO school (name, address, latitude, longitude) VALUES (?, ?, ?, ?)";
+  db.query(sql, [name, address, latitude, longitude], (err, result) => {
+    if (err) {
+      console.error("Error inserting data:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+    res
+      .status(201)
+      .json({
+        message: "School added successfully",
+        schoolId: result.insertId,
+      });
+  });
+});
+
+const haversineDistance = (lat1, lon1, lat2, lon2) => {
+  const toRadians = (degrees) => degrees * (Math.PI / 180);
+
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = toRadians(lat2 - lat1);
+  const dLon = toRadians(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(toRadians(lat1)) *
+      Math.cos(toRadians(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c; // Distance in kilometers
+};
+
+app.get("/listSchools", (req, res) => {
+  const userLatitude = parseFloat(req.query.latitude);
+  const userLongitude = parseFloat(req.query.longitude);
+
+  // Validate query parameters
+  if (!userLatitude || !userLongitude) {
+    return res
+      .status(400)
+      .json({ error: "Latitude and Longitude are required" });
+  }
+
+  // Fetch school from the database
+  const sql = "SELECT id, name, address, latitude, longitude FROM school";
+  db.query(sql, (err, results) => {
+    if (err) {
+      console.error("Error fetching data:", err);
+      return res.status(500).json({ error: "Database error" });
+    }
+
+    // Calculate distances and sort
+    const schoolsWithDistance = results.map((school) => ({
+      ...school,
+      distance: haversineDistance(
+        userLatitude,
+        userLongitude,
+        school.latitude,
+        school.longitude
+      ),
+    }));
+
+    // Sort by distance
+    schoolsWithDistance.sort((a, b) => a.distance - b.distance);
+
+    // Return the sorted list
+    res.json(schoolsWithDistance);
+  });
+});
