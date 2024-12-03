@@ -1,6 +1,6 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const mysql = require("mysql");
+const mysql = require("mysql2");
 
 const app = express();
 const port = 3000;
@@ -35,7 +35,9 @@ const pool = mysql.createPool({
 //   }
 //   console.log("Connected to MySQL database");
 // });
-
+pool.on('error', (err) => {
+  console.error("Database error:", err);
+});
 // Start server
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
