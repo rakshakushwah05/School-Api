@@ -1,6 +1,6 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const mysql = require("mysql2");
+const mysql = require("mysql");
 
 const app = express();
 const port = 3000;
@@ -18,7 +18,7 @@ app.use(bodyParser.json());
 // });
 require('dotenv').config();
 
-const db = mysql.createConnection({
+const pool = mysql.createConnection({
     host: process.env.DB_HOST,
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD,
@@ -27,13 +27,18 @@ const db = mysql.createConnection({
 
 
 // Connect to MySQL
-db.connect((err) => {
-  if (err) {
-    console.error("Database connection failed:", err.stack);
-    return;
-  }
-  console.log("Connected to MySQL database");
+// db.connect((err) => {
+//   if (err) {
+//     console.error("Database connection failed:", err.stack);
+//     return;
+//   }
+//   console.log("Connected to MySQL database");
+// });
+
+pool.on('error', (err) => {
+    console.error('Unexpected database error:', err);
 });
+
 
 // Start server
 app.listen(port, () => {
@@ -58,7 +63,7 @@ app.post("/addSchool", (req, res) => {
   // SQL query to insert data
   const sql =
     "INSERT INTO school (name, address, latitude, longitude) VALUES (?, ?, ?, ?)";
-  db.query(sql, [name, address, latitude, longitude], (err, result) => {
+  pool.query(sql, [name, address, latitude, longitude], (err, result) => {
     if (err) {
       console.error("Error inserting data:", err);
       return res.status(500).json({ error: "Database error" });
@@ -103,7 +108,7 @@ app.get("/listSchools", (req, res) => {
 
   // Fetch school from the database
   const sql = "SELECT id, name, address, latitude, longitude FROM school";
-  db.query(sql, (err, results) => {
+  pool.query(sql, (err, results) => {
     if (err) {
       console.error("Error fetching data:", err);
       return res.status(500).json({ error: "Database error" });
