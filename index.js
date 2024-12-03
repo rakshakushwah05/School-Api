@@ -1,6 +1,6 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const mysql = require("mysql2");
+const mysql = require("mysql");
 
 const app = express();
 const port = 3000;
@@ -8,37 +8,22 @@ const port = 3000;
 // Middleware to parse JSON data
 app.use(bodyParser.json());
 
-// Create MySQL connection
 
-// const db = mysql.createConnection({
-//   host: "localhost",
-//   user: "root",
-//   password: "Raksha@123",
-//   database: "School_Management",
-// });
-require('dotenv').config();
+
+require("dotenv").config();
 
 const pool = mysql.createPool({
-  connectionLimit:10,
-    host: process.env.DB_HOST,
-    user: process.env.DB_USER,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
 });
 
-
-// Connect to MySQL
-// pool.connect((err) => {
-//   if (err) {
-//     console.error("Database connection failed:", err.stack);
-//     return;
-//   }
-//   console.log("Connected to MySQL database");
-// });
-pool.on('error', (err) => {
+pool.on("error", (err) => {
   console.error("Database error:", err);
 });
-// Start server
+
+// Start serve
 app.listen(port, () => {
   console.log(`Server running on http://localhost:${port}`);
 });
@@ -66,12 +51,10 @@ app.post("/addSchool", (req, res) => {
       console.error("Error inserting data:", err);
       return res.status(500).json({ error: "Database error" });
     }
-    res
-      .status(201)
-      .json({
-        message: "School added successfully",
-        schoolId: result.insertId,
-      });
+    res.status(201).json({
+      message: "School added successfully",
+      schoolId: result.insertId,
+    });
   });
 });
 
