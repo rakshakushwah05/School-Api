@@ -3,7 +3,7 @@ const bodyParser = require("body-parser");
 const mysql = require("mysql");
 
 const app = express();
-const port = process.env.DB_PORT;
+const port = 3000 ;
 
 // Middleware to parse JSON data
 app.use(bodyParser.json());
@@ -25,7 +25,7 @@ pool.on("error", (err) => {
 
 // Start serve
 app.listen(port, () => {
-  console.log(`Server running on http://localhost:${port}`);
+  console.log(`Server running on port ${port}`);
 });
 
 // Add School Endpoint
